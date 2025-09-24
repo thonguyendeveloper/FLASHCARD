@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Triết học</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #eaf6ff;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .container {
+            max-width: 480px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px #0984e355;
+            padding: 32px 24px 24px 24px;
+        }
+        .flashcard {
+            width: 100%;
+            height: 220px;
+            perspective: 1000px;
+            margin-bottom: 24px;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.7s cubic-bezier(.4,2,.3,.7);
+            transform-style: preserve-3d;
+        }
+        .flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.18rem;
+            padding: 18px;
+            box-sizing: border-box;
+            border-radius: 14px;
+        }
+        .card-front {
+            background: #f6fbff;
+            color: #34495e;
+            font-weight: 600;
+        }
+        .card-back {
+            background: #eafaf1;
+            color: #0984e3;
+            font-weight: 500;
+            transform: rotateY(180deg);
+        }
+        .nav-btns {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 24px;
+        }
+        .nav-btn {
+            padding: 10px 24px;
+            font-size: 1.08rem;
+            border-radius: 8px;
+            border: none;
+            background: #0984e3;
+            color: #fff;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 2px 8px #0984e355;
+            transition: background 0.2s;
+        }
+        .nav-btn:disabled {
+            background: #b2bec3;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="flashcardArea"></div>
+        <div class="nav-btns">
+            <button class="nav-btn" id="prevBtn">Câu trước</button>
+            <button class="nav-btn" id="flipBtn">Lật thẻ</button>
+            <button class="nav-btn" id="nextBtn">Câu tiếp</button>
+        </div>
+    </div>
+    <script>
+        const flashcards = [
+            {
+                front: "Thế giới vật chất có tồn tại thật hay chỉ do con người nghĩ ra?",
+                back: "Thế giới vật chất tồn tại thật, khách quan, không phụ thuộc vào ý thức."
+            },
+            {
+                front: "Ý thức của con người thực chất là gì?",
+                back: "Ý thức là “hình ảnh chủ quan” của thế giới khách quan, con người nhìn sự vật qua lăng kính riêng."
+            },
+            {
+                front: "Muốn biết kiến thức đúng hay sai, ta dựa vào đâu?",
+                back: "Dựa vào thực tiễn: lao động, học tập, thí nghiệm…"
+            },
+            {
+                front: "Việc thừa nhận thế giới vật chất tồn tại khách quan giúp ta tránh sai lầm nào?",
+                back: "Tránh rơi vào chủ quan, duy ý chí, tưởng mình có thể “nghĩ gì thành nấy”."
+            },
+            {
+                front: "Vì sao nói ý thức vừa đúng lại vừa có thể sai?",
+                back: "Vì ý thức phản ánh thế giới qua chủ thể → có thể sáng tạo nhưng cũng dễ chủ quan."
+            },
+            {
+                front: "Trong học tập, vận dụng “thực tiễn là tiêu chuẩn của chân lý” như thế nào?",
+                back: "Vừa học lý thuyết, vừa làm bài tập, thực hành, thực tập → kiểm chứng kiến thức."
+            },
+            {
+                front: "Sinh viên chỉ học thuộc sách mà không làm bài tập, không thực hành. Điều này vi phạm nguyên tắc nào?",
+                back: "Nguyên tắc thực tiễn là tiêu chuẩn kiểm nghiệm tri thức."
+            },
+            {
+                front: "Một số người tin “chỉ cần nghĩ tích cực thì bệnh sẽ tự khỏi”. Nguyên tắc nào bác bỏ quan điểm này?",
+                back: "Nguyên tắc thừa nhận thế giới vật chất tồn tại khách quan, độc lập với ý thức."
+            },
+            {
+                front: "Khi nhà khoa học đưa ra giả thuyết, họ cần làm gì để chứng minh giả thuyết đó đúng?",
+                back: "Phải tiến hành thực nghiệm, kiểm chứng bằng thực tiễn."
+            },
+            {
+                front: "Tóm lại, ba nguyên tắc của lý luận nhận thức duy vật biện chứng là gì?",
+                back: "Thế giới vật chất tồn tại khách quan.\nÝ thức là hình ảnh chủ quan của thế giới khách quan.\nThực tiễn là tiêu chuẩn kiểm tra tri thức."
+            }
+        ];
+        let currentIndex = 0;
+        let isFlipped = false;
+        function renderFlashcard(index) {
+            const data = flashcards[index];
+            const cardHtml = `
+                <div class="flashcard${isFlipped ? ' flipped' : ''}">
+                    <div class="card-inner">
+                        <div class="card-front">${data.front}</div>
+                        <div class="card-back">${data.back.replace(/\n/g, '<br>')}</div>
+                    </div>
+                </div>
+                <div style="text-align:center; color:#b2bec3; font-size:1rem; margin-bottom:8px;">${index+1} / ${flashcards.length}</div>
+            `;
+            document.getElementById('flashcardArea').innerHTML = cardHtml;
+        }
+        document.getElementById('flipBtn').onclick = function() {
+            isFlipped = !isFlipped;
+            renderFlashcard(currentIndex);
+        };
+        document.getElementById('prevBtn').onclick = function() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                isFlipped = false;
+                renderFlashcard(currentIndex);
+            }
+        };
+        document.getElementById('nextBtn').onclick = function() {
+            if (currentIndex < flashcards.length - 1) {
+                currentIndex++;
+                isFlipped = false;
+                renderFlashcard(currentIndex);
+            }
+        };
+        renderFlashcard(currentIndex);
+    </script>
+</body>
+</html>
